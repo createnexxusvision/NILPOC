@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
+import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+
 import {ERC721URIStorage} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 import {NILEvents} from "../core/NILEvents.sol";
@@ -30,6 +32,18 @@ contract ReceiptNFT is ERC721URIStorage, AccessControl {
         _grantRole(MINTER_ROLE, admin);
     }
 
+    function supportsInterface(
+        bytes4 interfaceId
+    )
+        public
+        view
+        virtual
+        override(ERC721URIStorage, AccessControl)
+        returns (bool)
+    {
+        return super.supportsInterface(interfaceId);
+    }
+
     function mintReceipt(
         bytes32 orderHash,
         address buyer,
@@ -39,7 +53,10 @@ contract ReceiptNFT is ERC721URIStorage, AccessControl {
         uint256 platformFee,
         string calldata tokenURI
     ) external onlyRole(MINTER_ROLE) returns (uint256 tokenId) {
-        require(buyer != address(0) && seller != address(0), "RECEIPT: zero addr");
+        require(
+            buyer != address(0) && seller != address(0),
+            "RECEIPT: zero addr"
+        );
         tokenId = ++nextTokenId;
         _safeMint(buyer, tokenId);
         _setTokenURI(tokenId, tokenURI);
@@ -54,6 +71,15 @@ contract ReceiptNFT is ERC721URIStorage, AccessControl {
             timestamp: uint64(block.timestamp)
         });
 
-        emit NILEvents.ReceiptMinted(tokenId, orderHash, buyer, seller, token, price, platformFee, tokenURI);
+        emit NILEvents.ReceiptMinted(
+            tokenId,
+            orderHash,
+            buyer,
+            seller,
+            token,
+            price,
+            platformFee,
+            tokenURI
+        );
     }
 }
