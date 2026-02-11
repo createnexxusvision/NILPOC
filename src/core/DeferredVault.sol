@@ -6,11 +6,11 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {NILTypes} from "./NILTypes.sol";
 import {NILEvents} from "./NILEvents.sol";
-import {AttestationGate} from "./AttestationGate.sol";
+import {ProtocolPausable} from "./ProtocolPausable.sol";
 
 /// @title DeferredVault
 /// @notice Timelocked escrow vault for NIL funds (ETH or ERC20), optionally gated by attestations.
-contract DeferredVault is ReentrancyGuard, AttestationGate {
+contract DeferredVault is ReentrancyGuard, ProtocolPausable {
     using SafeERC20 for IERC20;
 
     uint256 public grantCount;
@@ -34,7 +34,7 @@ contract DeferredVault is ReentrancyGuard, AttestationGate {
         uint256 amount,
         uint64 unlockTime,
         bytes32 termsHash
-    ) external payable nonReentrant returns (uint256 grantId) {
+    ) external payable nonReentrant returns (uint256 grantId)  whenNotPaused {
         require(beneficiary != address(0), "VAULT: zero beneficiary");
         require(amount > 0, "VAULT: zero amount");
         require(unlockTime > block.timestamp, "VAULT: bad unlock");
@@ -59,7 +59,7 @@ contract DeferredVault is ReentrancyGuard, AttestationGate {
     }
 
     /// @notice Attester (oracle/judge) attests that off-chain conditions are satisfied.
-    function attestGrant(uint256 grantId, bytes32 attestationHash) external {
+    function attestGrant(uint256 grantId, bytes32 attestationHash) external  whenNotPaused {
         require(isOracle(msg.sender) || isJudge(msg.sender) || hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "VAULT: not attester");
         NILTypes.Grant storage g = _grants[grantId];
         require(!g.attested, "VAULT: already attested");

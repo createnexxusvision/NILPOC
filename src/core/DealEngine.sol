@@ -6,12 +6,12 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {NILTypes} from "./NILTypes.sol";
 import {NILEvents} from "./NILEvents.sol";
-import {AttestationGate} from "./AttestationGate.sol";
+import {ProtocolPausable} from "./ProtocolPausable.sol";
 
 /// @title DealEngine
 /// @notice Escrowed NIL deals for ETH or ERC20 (USDC default), with delivery, disputes, and settlement.
 /// @dev Designed for L2s (Base/Polygon) and testing on Sepolia.
-contract DealEngine is ReentrancyGuard, AttestationGate {
+contract DealEngine is ReentrancyGuard, ProtocolPausable {
     using SafeERC20 for IERC20;
 
     uint16 public constant BPS_DENOMINATOR = 10_000;
@@ -50,7 +50,7 @@ contract DealEngine is ReentrancyGuard, AttestationGate {
         uint256 amount,
         uint64 deadline,
         bytes32 termsHash
-    ) external payable nonReentrant returns (uint256 dealId) {
+    ) external payable nonReentrant returns (uint256 dealId)  whenNotPaused {
         require(athlete != address(0), "DEAL: zero athlete");
         require(amount > 0, "DEAL: zero amount");
         require(deadline > block.timestamp, "DEAL: bad deadline");
@@ -157,7 +157,7 @@ contract DealEngine is ReentrancyGuard, AttestationGate {
     }
 
     /// @notice Judge resolves dispute. chooseRefund=true refunds sponsor; else pays athlete (minus fee).
-    function resolveDispute(uint256 dealId, bool chooseRefund) external nonReentrant {
+    function resolveDispute(uint256 dealId, bool chooseRefund) external nonReentrant  whenNotPaused {
         require(isJudge(msg.sender) || hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "DEAL: not judge");
         NILTypes.Deal storage d = _deals[dealId];
         require(d.status == NILTypes.DealStatus.DISPUTED, "DEAL: not disputed");

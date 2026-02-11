@@ -41,6 +41,7 @@ library NILEvents {
         uint256 indexed payoutId,
         bytes32 indexed ref,
         address indexed payer,
+        address indexed authorizer,
         address token,
         uint256 amount,
         uint256 splitId,
@@ -75,4 +76,8 @@ library NILEvents {
         uint256 platformFee,
         string tokenURI
     );
+
+    /// @notice Normalized attestation record (oracle / judge / verifier).
+    event AttestationRecorded(bytes32 indexed ref, address indexed attester, bool ok, bytes32 attestationHash);
+
 }

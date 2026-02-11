@@ -106,7 +106,7 @@ def upsert_current(cur, chain_id: int, event_name: str, args: Dict[str, Any]):
         cur.execute(
             """
             INSERT INTO grants_current(chain_id, grant_id, sponsor, beneficiary, token, amount, unlock_time, terms_hash)
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
             ON CONFLICT (chain_id, grant_id) DO UPDATE SET updated_at=NOW();
             """,
             (
@@ -151,8 +151,8 @@ def upsert_current(cur, chain_id: int, event_name: str, args: Dict[str, Any]):
     elif event_name == "PayoutExecuted":
         cur.execute(
             """
-            INSERT INTO payouts_current(chain_id, payout_id, ref, payer, token, amount, split_id, executed_at)
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+            INSERT INTO payouts_current(chain_id, payout_id, ref, payer, authorizer, token, amount, split_id, executed_at)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
             ON CONFLICT (chain_id, payout_id) DO NOTHING;
             """,
             (
@@ -160,6 +160,7 @@ def upsert_current(cur, chain_id: int, event_name: str, args: Dict[str, Any]):
                 int(args["payoutId"]),
                 args["ref"].hex() if hasattr(args["ref"], "hex") else str(args["ref"]),
                 args["payer"],
+                args.get("authorizer", args["payer"]),
                 args["token"],
                 int(args["amount"]),
                 int(args["splitId"]),

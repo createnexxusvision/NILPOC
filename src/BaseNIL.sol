@@ -15,8 +15,10 @@ pragma solidity ^0.8.19;
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 abstract contract BaseNIL is Ownable, ReentrancyGuard {
+    using SafeERC20 for IERC20;
     // ----- Common statuses for "deal-like" flows -----
     enum DealStatus {
         Pending, // Created / funded, waiting for conditions (time, verification, etc.)
@@ -67,8 +69,7 @@ abstract contract BaseNIL is Ownable, ReentrancyGuard {
         require(to != address(0), "BaseNIL: zero address");
         if (amount == 0) return;
 
-        IERC20 erc20 = IERC20(token);
-        require(erc20.transfer(to, amount), "BaseNIL: ERC20 transfer failed");
+        IERC20(token).safeTransfer(to, amount);
         emit FundsSent(to, amount, token);
     }
 
