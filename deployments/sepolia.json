@@ -1,0 +1,19 @@
+{
+  "network": "sepolia",
+  "chainId": 11155111,
+  "deployer": "0x9A25465B79d5C15465d4fA5857fFA1Ee0B2A51e9",
+  "deployedAt": "2026-02-18",
+  "contracts": {
+    "DealEngine":    "0xEf6c3F54c951616fd73A4a5EE0Aca3F1253a6Dd3",
+    "DeferredVault": "0xB8C314fDE59EDca68D2a558E60412f0C13554C67",
+    "PayoutRouter":  "0xb4089B332674B5F4320e5449E9D5d3CBf2129193",
+    "ReceiptNFT":    "0x890433Ff0B2dE50e58b50Ed7926bB5a6B29d88cA"
+  },
+  "verified": true,
+  "etherscan": {
+    "DealEngine":    "https://sepolia.etherscan.io/address/0xEf6c3F54c951616fd73A4a5EE0Aca3F1253a6Dd3",
+    "DeferredVault": "https://sepolia.etherscan.io/address/0xB8C314fDE59EDca68D2a558E60412f0C13554C67",
+    "PayoutRouter":  "https://sepolia.etherscan.io/address/0xb4089B332674B5F4320e5449E9D5d3CBf2129193",
+    "ReceiptNFT":    "https://sepolia.etherscan.io/address/0x890433Ff0B2dE50e58b50Ed7926bB5a6B29d88cA"
+  }
+}
