@@ -6,4 +6,19 @@ via_ir = true
 optimizer = true
 optimizer_runs = 200
 
+[rpc_endpoints]
+localhost      = "http://127.0.0.1:8545"
+sepolia        = "${SEPOLIA_RPC_URL}"
+base_sepolia   = "${BASE_SEPOLIA_RPC_URL}"
+polygon_amoy   = "${POLYGON_AMOY_RPC_URL}"
+base           = "${BASE_RPC_URL}"
+polygon        = "${POLYGON_RPC_URL}"
+
+[etherscan]
+sepolia      = { key = "${ETHERSCAN_API_KEY}", chain = "sepolia" }
+base_sepolia = { key = "${BASESCAN_API_KEY}", chain = "base-sepolia", url = "https://api-sepolia.basescan.org/api" }
+polygon_amoy = { key = "${POLYGONSCAN_API_KEY}", chain = "polygon-amoy", url = "https://api-amoy.polygonscan.com/api" }
+base         = { key = "${BASESCAN_API_KEY}", chain = "base", url = "https://api.basescan.org/api" }
+polygon      = { key = "${POLYGONSCAN_API_KEY}", chain = "polygon" }
+
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options

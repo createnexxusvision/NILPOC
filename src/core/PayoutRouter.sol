@@ -61,6 +61,7 @@ contract PayoutRouter is ReentrancyGuard, EIP712, ProtocolPausable {
             address r = recipients[i].recipient;
             uint16 b = recipients[i].bps;
             require(r != address(0), "PAYOUT: zero recipient");
+            require(r != address(this), "PAYOUT: self recipient");
             require(b > 0, "PAYOUT: zero bps");
             sum += b;
             _splitRecipients[splitCount][i] = recipients[i];
@@ -98,6 +99,7 @@ contract PayoutRouter is ReentrancyGuard, EIP712, ProtocolPausable {
             address r = recipients[i].recipient;
             uint16 b = recipients[i].bps;
             require(r != address(0), "PAYOUT: zero recipient");
+            require(r != address(this), "PAYOUT: self recipient");
             require(b > 0, "PAYOUT: zero bps");
             sum += b;
             _splitRecipients[splitCount][i] = recipients[i];
