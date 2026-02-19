@@ -80,6 +80,28 @@ th { text-align: left; color: #778; font-weight: 500; border-bottom: 1px solid #
 td { padding: 0.35rem 0.4rem; border-bottom: 1px solid #1e1e30; }
 .addr { font-family: monospace; color: #9cf; }
 
+/* Tabs */
+.tabs { display: flex; gap: 0.4rem; margin-bottom: 1rem; }
+.tab {
+  background: transparent; color: #778; border: 1px solid #334;
+  border-radius: 5px 5px 0 0; padding: 0.4rem 1rem; cursor: pointer; font-size: 0.88rem;
+}
+.tab:hover { color: #ccd; background: #111; }
+.tab.active { background: #1a1a2e; color: #7af; border-bottom-color: #1a1a2e; }
+
+/* Card description */
+.card-desc { margin: 0; font-size: 0.78rem; color: #667; line-height: 1.4; }
+
+/* How-it-works list */
+.how-list { margin: 0.3rem 0 0; padding-left: 1.2rem; font-size: 0.82rem; color: #99a; line-height: 1.8; }
+.how-list strong { color: #ccd; }
+
+/* Action cell */
+.action-cell { display: flex; gap: 0.3rem; flex-wrap: wrap; }
+
+/* Red button variant */
+.btn-sm.btn-red { background: #3d1a1a; color: #f88; border-color: #844; }
+
 /* Misc */
 .empty { color: #556; font-style: italic; }
 footer { border-top: 1px solid #222; margin-top: 1rem; padding-top: 0.6rem; color: #556; font-size: 0.78rem; }
