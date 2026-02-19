@@ -1,55 +1,11 @@
-// SP
-    /// @notice Execute a payout using an EIP-712 signature from an authorized operator/admin.
-    /// @dev Caller can be any relayer; signer authorization is enforced via signature.
-    function payoutWithSig(
-        bytes32 ref,
-        address token,
-        uint256 amount,
-        uint256 splitId,
-        uint256 nonce,
-        uint256 deadline,
-        bytes calldata signature
-    ) external payable whenNotPaused nonReentrant returns (uint256 payoutId) {
-        require(block.timestamp <= deadline, "PAYOUT: sig expired");
-        bytes32 digest = _hashTypedDataV4(
-            keccak256(abi.encode(PAYOUT_TYPEHASH, ref, token, amount, splitId, nonce, deadline))
-        );
-        address signer = digest.recover(signature);
-        require(isOperator(signer) || hasRole(DEFAULT_ADMIN_ROLE, signer), "PAYOUT: bad signer");
-        require(nonces[signer] == nonce, "PAYOUT: bad nonce");
-        nonces[signer] = nonce + 1;
-
-        // Execute payout using the standard function logic, but attribute to signer for indexing.
-        // We inline a minimal copy to preserve correct msg.value semantics.
-        Split memory s = splits[splitId];
-        require(s.n > 0, "PAYOUT: unknown split");
-        require(amount > 0, "PAYOUT: zero amount");
-
-        if (token == NILTypes.NATIVE) {
-            require(msg.value == amount, "PAYOUT: bad msg.value");
-            for (uint256 i = 0; i < s.n; i++) {
-                NILTypes.SplitRecipient memory r = _splitRecipients[splitId][i];
-                uint256 share = (amount * r.bps) / BPS_DENOMINATOR;
-                (bool ok, ) = r.recipient.call{value: share}("");
-                require(ok, "PAYOUT: eth send failed");
-            }
-        } else {
-            IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
-            for (uint256 i = 0; i < s.n; i++) {
-                NILTypes.SplitRecipient memory r = _splitRecipients[splitId][i];
-                uint256 share = (amount * r.bps) / BPS_DENOMINATOR;
-                IERC20(token).safeTransfer(r.recipient, share);
-            }
-        }
-
-        payoutId = payoutCount++;
-        emit NILEvents.PayoutExecuted(payoutId, ref, msg.sender, signer, token, amount, splitId, uint64(block.timestamp));
-    }
-
-DX-License-Identifier: MIT
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+// FIX: File previously opened with a floating payoutWithSig() body fragment before this SPDX line.
+// That orphaned code (lines 1–47 of the original) caused a parse error — deleted entirely.
+// payoutWithSig() already exists correctly below inside the contract body.
+
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {EIP712} from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -57,6 +13,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {NILTypes} from "./NILTypes.sol";
 import {NILEvents} from "./NILEvents.sol";
 import {ProtocolPausable} from "./ProtocolPausable.sol";
+import {AttestationGate} from "./AttestationGate.sol";
 
 /// @title PayoutRouter
 /// @notice Deterministic payout splitting for ETH and ERC20 (USDC default).
@@ -76,22 +33,23 @@ contract PayoutRouter is ReentrancyGuard, EIP712, ProtocolPausable {
 
     struct Split {
         bytes32 splitHash; // hash of recipients array
-        uint8 n; // number of recipients
-        // packed recipients stored separately
+        uint8 n;           // number of recipients
     }
 
     uint256 public splitCount;
     mapping(uint256 => Split) public splits;
-    mapping(uint256 => mapping(uint256 => NILTypes.SplitRecipient)) private _splitRecipients; // splitId => index => recipient
+    mapping(uint256 => mapping(uint256 => NILTypes.SplitRecipient)) private _splitRecipients;
 
     uint256 public payoutCount;
 
     constructor(address admin)
         AttestationGate(admin)
-        EIP712("NILPOC-PayoutRouter","1")
+        EIP712("NILPOC-PayoutRouter", "1")
     {}
 
-    /// @notice Define a split. Default authorization: OPERATOR or ADMIN.
+    // -------- Split Management --------
+
+    /// @notice Define a split. Authorization: OPERATOR or ADMIN.
     function defineSplit(NILTypes.SplitRecipient[] calldata recipients) external whenNotPaused returns (uint256 splitId) {
         require(isOperator(msg.sender) || hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "PAYOUT: not authorized");
         uint256 n = recipients.length;
@@ -117,7 +75,6 @@ contract PayoutRouter is ReentrancyGuard, EIP712, ProtocolPausable {
     }
 
     /// @notice Define a split using an EIP-712 signature from an authorized operator/admin.
-    /// @dev Enables permissionless relaying while keeping authorization in signatures.
     function defineSplitWithSig(
         NILTypes.SplitRecipient[] calldata recipients,
         uint256 nonce,
@@ -154,17 +111,20 @@ contract PayoutRouter is ReentrancyGuard, EIP712, ProtocolPausable {
         emit NILEvents.SplitDefined(splitId, h, signer);
     }
 
-
     function getSplitRecipient(uint256 splitId, uint256 index) external view returns (NILTypes.SplitRecipient memory) {
         return _splitRecipients[splitId][index];
     }
 
-    /// @notice Execute a payout according to a split. Uses ref for app-level correlation.
-    /// @param ref Arbitrary reference (e.g., orderHash, dealHash) for indexing.
+    // -------- Payouts --------
+
+    /// @notice Execute a payout according to a split.
+    /// @param ref  Arbitrary reference (e.g., dealHash) for indexing.
     /// @param token address(0) for ETH, else ERC20.
     /// @param amount total amount to distribute.
     /// @param splitId previously defined split id.
-    function payout(bytes32 ref, address token, uint256 amount, uint256 splitId) external payable whenNotPaused nonReentrant returns (uint256 payoutId) {
+    function payout(bytes32 ref, address token, uint256 amount, uint256 splitId)
+        external payable whenNotPaused nonReentrant returns (uint256 payoutId)
+    {
         Split memory s = splits[splitId];
         require(s.n > 0, "PAYOUT: unknown split");
         require(amount > 0, "PAYOUT: zero amount");
@@ -177,17 +137,14 @@ contract PayoutRouter is ReentrancyGuard, EIP712, ProtocolPausable {
             IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
         }
 
-        // Distribute
+        // Distribute — last recipient absorbs rounding dust
         uint256 remaining = amount;
         for (uint256 i = 0; i < s.n; i++) {
             NILTypes.SplitRecipient memory r = _splitRecipients[splitId][i];
-            uint256 part = (amount * uint256(r.bps)) / BPS_DENOMINATOR;
-            if (i == s.n - 1) {
-                // dust to last recipient
-                part = remaining;
-            } else {
-                remaining -= part;
-            }
+            uint256 part = (i == s.n - 1)
+                ? remaining
+                : (amount * uint256(r.bps)) / BPS_DENOMINATOR;
+            remaining -= part;
 
             if (token == NILTypes.NATIVE) {
                 (bool ok, ) = r.recipient.call{value: part}("");
@@ -199,5 +156,50 @@ contract PayoutRouter is ReentrancyGuard, EIP712, ProtocolPausable {
 
         payoutId = payoutCount++;
         emit NILEvents.PayoutExecuted(payoutId, ref, msg.sender, msg.sender, token, amount, splitId, uint64(block.timestamp));
+    }
+
+    /// @notice Execute a payout using an EIP-712 signature from an authorized operator/admin.
+    /// @dev Caller can be any relayer; signer authorization is enforced via signature.
+    function payoutWithSig(
+        bytes32 ref,
+        address token,
+        uint256 amount,
+        uint256 splitId,
+        uint256 nonce,
+        uint256 deadline,
+        bytes calldata signature
+    ) external payable whenNotPaused nonReentrant returns (uint256 payoutId) {
+        require(block.timestamp <= deadline, "PAYOUT: sig expired");
+        bytes32 digest = _hashTypedDataV4(
+            keccak256(abi.encode(PAYOUT_TYPEHASH, ref, token, amount, splitId, nonce, deadline))
+        );
+        address signer = digest.recover(signature);
+        require(isOperator(signer) || hasRole(DEFAULT_ADMIN_ROLE, signer), "PAYOUT: bad signer");
+        require(nonces[signer] == nonce, "PAYOUT: bad nonce");
+        nonces[signer] = nonce + 1;
+
+        Split memory s = splits[splitId];
+        require(s.n > 0, "PAYOUT: unknown split");
+        require(amount > 0, "PAYOUT: zero amount");
+
+        if (token == NILTypes.NATIVE) {
+            require(msg.value == amount, "PAYOUT: bad msg.value");
+            for (uint256 i = 0; i < s.n; i++) {
+                NILTypes.SplitRecipient memory r = _splitRecipients[splitId][i];
+                uint256 share = (amount * r.bps) / BPS_DENOMINATOR;
+                (bool ok, ) = r.recipient.call{value: share}("");
+                require(ok, "PAYOUT: eth send failed");
+            }
+        } else {
+            IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
+            for (uint256 i = 0; i < s.n; i++) {
+                NILTypes.SplitRecipient memory r = _splitRecipients[splitId][i];
+                uint256 share = (amount * r.bps) / BPS_DENOMINATOR;
+                IERC20(token).safeTransfer(r.recipient, share);
+            }
+        }
+
+        payoutId = payoutCount++;
+        emit NILEvents.PayoutExecuted(payoutId, ref, msg.sender, signer, token, amount, splitId, uint64(block.timestamp));
     }
 }

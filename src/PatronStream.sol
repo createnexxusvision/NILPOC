@@ -28,7 +28,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 contract PatronStream is ERC721, Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
@@ -91,7 +91,7 @@ contract PatronStream is ERC721, Ownable, ReentrancyGuard {
     constructor(
         address tokenAddress,
         bool _badgesEnabled
-    ) ERC721("Patron Badge", "PTNBDG") {
+    ) ERC721("Patron Badge", "PTNBDG") Ownable(msg.sender) {
         require(tokenAddress != address(0), "PatronStream: zero token");
         token = IERC20(tokenAddress);
         badgesEnabled = _badgesEnabled;

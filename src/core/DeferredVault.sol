@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {NILTypes} from "./NILTypes.sol";
 import {NILEvents} from "./NILEvents.sol";
 import {ProtocolPausable} from "./ProtocolPausable.sol";
+import {AttestationGate} from "./AttestationGate.sol";
 
 /// @title DeferredVault
 /// @notice Timelocked escrow vault for NIL funds (ETH or ERC20), optionally gated by attestations.
@@ -34,7 +35,7 @@ contract DeferredVault is ReentrancyGuard, ProtocolPausable {
         uint256 amount,
         uint64 unlockTime,
         bytes32 termsHash
-    ) external payable nonReentrant returns (uint256 grantId)  whenNotPaused {
+    ) external payable nonReentrant whenNotPaused returns (uint256 grantId) {
         require(beneficiary != address(0), "VAULT: zero beneficiary");
         require(amount > 0, "VAULT: zero amount");
         require(unlockTime > block.timestamp, "VAULT: bad unlock");

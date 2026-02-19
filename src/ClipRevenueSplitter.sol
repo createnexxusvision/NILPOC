@@ -33,7 +33,7 @@ pragma solidity ^0.8.19;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 contract ClipRevenueSplitter is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
@@ -86,7 +86,7 @@ contract ClipRevenueSplitter is Ownable, ReentrancyGuard {
     /**
      * @param tokenAddress ERC20 token used for payments (e.g. USDC).
      */
-    constructor(address tokenAddress) {
+    constructor(address tokenAddress) Ownable(msg.sender) {
         require(tokenAddress != address(0), "ClipSplitter: zero token");
         token = IERC20(tokenAddress);
         emit TokenUpdated(tokenAddress);

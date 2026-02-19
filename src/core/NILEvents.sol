@@ -37,10 +37,12 @@ library NILEvents {
     // --- PayoutRouter ---
     event SplitDefined(uint256 indexed splitId, bytes32 splitHash, address indexed creator);
 
+    // FIX: PayoutExecuted had 4 indexed params — EVM max is 3 for non-anonymous events.
+    // Removed 'indexed' from 'payer' (least query-critical; derivable from context).
     event PayoutExecuted(
         uint256 indexed payoutId,
         bytes32 indexed ref,
-        address indexed payer,
+        address payer,
         address indexed authorizer,
         address token,
         uint256 amount,
@@ -79,5 +81,4 @@ library NILEvents {
 
     /// @notice Normalized attestation record (oracle / judge / verifier).
     event AttestationRecorded(bytes32 indexed ref, address indexed attester, bool ok, bytes32 attestationHash);
-
 }
