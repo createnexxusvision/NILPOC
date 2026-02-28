@@ -69,6 +69,8 @@ contract PayoutRouter is ReentrancyGuard, EIP712, ProtocolPausable {
         require(sum == BPS_DENOMINATOR, "PAYOUT: bps must sum 10000");
 
         splitId = splitCount;
+        // forge-lint: disable-next-line(unsafe-typecast)
+        // uint8 cast is safe: n <= MAX_RECIPIENTS (50), which fits uint8
         splits[splitId] = Split({splitHash: h, n: uint8(n)});
         splitCount++;
 
@@ -107,6 +109,8 @@ contract PayoutRouter is ReentrancyGuard, EIP712, ProtocolPausable {
         require(sum == BPS_DENOMINATOR, "PAYOUT: bps must sum 10000");
 
         splitId = splitCount;
+        // forge-lint: disable-next-line(unsafe-typecast)
+        // uint8 cast is safe: n <= MAX_RECIPIENTS (50), which fits uint8
         splits[splitId] = Split({splitHash: h, n: uint8(n)});
         splitCount++;
 
